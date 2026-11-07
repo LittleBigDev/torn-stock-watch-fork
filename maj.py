@@ -4,13 +4,13 @@ Usage : python maj.py
 Télécharge l'original sur Greasy Fork, applique les corrections ci-dessous et écrit le fork.
 Si une ligne à corriger a changé dans l'original, s'arrête sans rien écrire.
 """
-import json
 import re
 import urllib.request
 from pathlib import Path
 
 ICI = Path(__file__).parent
-GREASYFORK = "https://greasyfork.org/scripts/596452.json"
+# Code servi par Greasy Fork : la fiche JSON et le meta.js affichent parfois encore la version précédente
+ORIGINAL = "https://update.greasyfork.org/scripts/596452.user.js"
 FORK = ICI / "torn-stock-watch-fork.user.js"
 RAW = "https://raw.githubusercontent.com/LittleBigDev/torn-stock-watch-fork/main/torn-stock-watch-fork.user.js"
 
@@ -48,8 +48,8 @@ def entete(code, version):
 
 
 if __name__ == "__main__":
-    d = json.loads(get(GREASYFORK))
-    code = get(d["code_url"])
+    code = get(ORIGINAL)
+    version = re.search(r"^// @version\s+(\S+)", code, re.M)[1]
     erreurs = []
     for motif, remplacement, attendu in CORRECTIONS:
         trouve = code.count(motif)
@@ -58,5 +58,5 @@ if __name__ == "__main__":
         code = code.replace(motif, remplacement)
     if erreurs:
         raise SystemExit("Original modifié, fork non écrit. À adapter dans maj.py :\n  " + "\n  ".join(erreurs))
-    FORK.write_text(entete(code, d["version"]), encoding="utf-8", newline="\n")
-    print(f"Fork écrit : Stock Watch {d['version']}-fork. Commit et push : Violentmonkey le met à jour depuis GitHub.")
+    FORK.write_text(entete(code, version), encoding="utf-8", newline="\n")
+    print(f"Fork écrit : Stock Watch {version}-fork. Commit et push : Violentmonkey le met à jour depuis GitHub.")
