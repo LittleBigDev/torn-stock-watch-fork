@@ -4,13 +4,15 @@ Usage : python maj.py
 Télécharge l'original sur Greasy Fork, applique les corrections ci-dessous et écrit le fork.
 Si une ligne à corriger a changé dans l'original, s'arrête sans rien écrire.
 """
+import json
 import re
 import urllib.request
 from pathlib import Path
 
 ICI = Path(__file__).parent
-# Code servi par Greasy Fork : la fiche JSON et le meta.js affichent parfois encore la version précédente
+# La liste des versions et le code servi se mettent à jour avec des heures d'écart : on prend le plus récent
 ORIGINAL = "https://update.greasyfork.org/scripts/596452.user.js"
+VERSIONS = "https://greasyfork.org/scripts/596452/versions.json"
 FORK = ICI / "torn-stock-watch-fork.user.js"
 RAW = "https://raw.githubusercontent.com/LittleBigDev/torn-stock-watch-fork/main/torn-stock-watch-fork.user.js"
 
@@ -48,8 +50,11 @@ def entete(code, version):
 
 
 if __name__ == "__main__":
-    code = get(ORIGINAL)
-    version = re.search(r"^// @version\s+(\S+)", code, re.M)[1]
+    def version(c):
+        return re.search(r"^// @version\s+(\S+)", c, re.M)[1]
+    code = max(get(json.loads(get(VERSIONS))[0]["code_url"]), get(ORIGINAL),
+               key=lambda c: tuple(int(n) for n in re.findall(r"\d+", version(c))))
+    version = version(code)
     erreurs = []
     for motif, remplacement, attendu in CORRECTIONS:
         trouve = code.count(motif)
